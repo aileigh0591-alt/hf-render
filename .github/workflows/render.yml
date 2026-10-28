@@ -1,0 +1,49 @@
+# 증시한스푼 브리핑 화면 렌더 (HyperFrames) — 봇(VM)이 repository_dispatch 로 장면 데이터를 보내면
+# 애니메이션 화면 + 자막(ASS)을 무음 MP4 로 만들어 artifact(video-<job_id>)로 올린다. 음성·배경음은 VM 이 합친다.
+name: render
+run-name: render ${{ github.event.client_payload.job_id || 'manual' }}
+on:
+  repository_dispatch:
+    types: [render]
+  workflow_dispatch: {}          # 수동 시험: samples/sample_job.json 사용
+permissions:
+  contents: read
+concurrency:
+  group: render-${{ github.event.client_payload.job_id || github.run_id }}
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 도구 설치 (ffmpeg · 자막 글꼴)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-nanum fonts-nanum-extra >/dev/null
+      - name: 장면 데이터 풀기
+        env:
+          JOB: ${{ github.event.client_payload.job }}
+        run: |
+          if [ -n "$JOB" ]; then printf '%s' "$JOB" | base64 -d | gunzip > job.json; else cp samples/sample_job.json job.json; fi
+          python3 build.py job.json
+      - name: HyperFrames 렌더
+        working-directory: render
+        run: npx --yes hyperframes@0.8.208 render
+      - name: 자막 입히기
+        run: |
+          V=$(ls -t render/renders/*.mp4 | head -1)
+          if [ -s subs.ass ]; then
+            ffmpeg -y -loglevel error -i "$V" -vf "ass=subs.ass" -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p -an out.mp4
+          else
+            ffmpeg -y -loglevel error -i "$V" -c:v copy -an out.mp4
+          fi
+          ls -la out.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ github.event.client_payload.job_id || 'manual' }}
+          path: out.mp4
+          retention-days: 1
+          if-no-files-found: error
