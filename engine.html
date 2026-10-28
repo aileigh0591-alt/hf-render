@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko" data-resolution="portrait">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, height=1920" />
+<script src="assets/gsap.min.js"></script>
+<style>
+  @font-face { font-family: "Pretendard"; font-weight: 600; src: url("assets/fonts/Pretendard-SemiBold.woff2") format("woff2"); }
+  @font-face { font-family: "Pretendard"; font-weight: 700; src: url("assets/fonts/Pretendard-Bold.woff2") format("woff2"); }
+  @font-face { font-family: "Pretendard"; font-weight: 800; src: url("assets/fonts/Pretendard-ExtraBold.woff2") format("woff2"); }
+  @font-face { font-family: "Pretendard"; font-weight: 900; src: url("assets/fonts/Pretendard-Black.woff2") format("woff2"); }
+  :root { --bg:#0a0f1c; --panel:#121a2c; --line:#24304a; --ink:#f4f6fb; --dim:#8a96b0;
+          --up:#ff4d5e; --down:#3d8bff; --accent:#ffc23d; --good:#2fd08a; --font:"Pretendard",sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:1080px; height:1920px; overflow:hidden; background:var(--bg); }
+  #root { position:relative; width:1080px; height:1920px; font-family:var(--font); color:var(--ink);
+          font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+  /* 자막 자리(아래 560px)는 비워 둔다 — 자막은 렌더 뒤 ffmpeg 로 입힘 */
+  .clip { position:absolute; left:0; top:0; width:1080px; height:1360px; padding:190px 70px 30px; display:flex; flex-direction:column; }
+  #brand { position:absolute; top:60px; left:70px; right:70px; display:flex; justify-content:space-between; align-items:center;
+           font-size:32px; font-weight:700; color:var(--dim); z-index:5; }
+  #brand b { color:var(--accent); }
+  #progress { position:absolute; left:0; top:0; height:10px; width:1080px; background:var(--accent); transform-origin:left center; z-index:6; }
+  #disclaimer { position:absolute; bottom:40px; left:70px; right:70px; text-align:center; font-size:26px; color:var(--dim); z-index:5; }
+  .chip { align-self:flex-start; font-size:32px; font-weight:800; color:#0a0f1c; background:var(--accent); padding:8px 22px; border-radius:999px; margin-bottom:22px; }
+  .h2 { font-size:76px; font-weight:800; line-height:1.15; letter-spacing:-0.03em; }
+  .sub { font-size:42px; font-weight:600; color:var(--dim); margin-top:14px; }
+  .big { margin-top:26px; }
+  .big .n { font-size:150px; font-weight:900; letter-spacing:-0.05em; line-height:1; }
+  .big .d { font-size:36px; color:var(--dim); font-weight:600; margin-top:10px; }
+  .body { margin-top:30px; flex:1; display:flex; flex-direction:column; justify-content:center; padding-bottom:40px; }
+  .up { color:var(--up); } .down { color:var(--down); }
+  /* 막대 */
+  .bar { display:grid; grid-template-columns:250px 1fr; align-items:center; height:92px; }
+  .bar .tk { font-size:42px; font-weight:700; white-space:nowrap; overflow:hidden; }
+  .bar .track { position:relative; height:56px; }
+  .bar .axis { position:absolute; left:50%; top:-12px; bottom:-12px; width:2px; background:var(--line); }
+  .bar .fill { position:absolute; top:0; height:56px; border-radius:8px; }
+  .bar .val { position:absolute; top:6px; font-size:38px; font-weight:800; white-space:nowrap; }
+  /* 타일 */
+  .tiles { display:flex; gap:22px; }
+  .tile { flex:1; background:var(--panel); border:3px solid var(--line); border-radius:30px; padding:52px 22px; text-align:center; }
+  .tile .l { font-size:32px; color:var(--dim); font-weight:600; }
+  .tile .n { font-size:72px; font-weight:800; margin:12px 0 6px; }
+  .tile .c { font-size:30px; color:var(--ink); }
+  /* 카드 */
+  .card { background:var(--panel); border:2px solid var(--line); border-radius:34px; padding:40px 44px; }
+  .card .badge { display:inline-block; font-size:30px; font-weight:800; color:var(--accent); border:2px solid var(--accent); border-radius:999px; padding:6px 20px; }
+  .card .hl { font-size:66px; font-weight:800; line-height:1.3; margin-top:26px; }
+  .card .ds { font-size:36px; color:var(--dim); margin-top:22px; line-height:1.45; }
+  .card .src { font-size:28px; color:var(--dim); margin-top:22px; }
+  .card + .card { margin-top:22px; }
+  /* 큰 한 줄 */
+  .line { font-size:84px; font-weight:800; line-height:1.3; text-align:center; }
+  .foot { font-size:30px; color:var(--dim); text-align:center; margin-top:40px; }
+  .wx { align-self:center; margin-top:60px; font-size:40px; font-weight:700; border:3px solid var(--good); border-radius:28px; padding:22px 40px; }
+  /* 게이지 */
+  .gauge { display:grid; grid-template-columns:330px 1fr; align-items:center; height:300px; }
+  .gauge svg { width:310px; height:190px; overflow:visible; }
+  .gauge .nm { font-size:44px; font-weight:800; }
+  .gauge .sc { font-size:96px; font-weight:900; line-height:1; margin-top:6px; }
+  .gauge .zn { font-size:44px; font-weight:800; margin-left:16px; }
+  .gauge .pv { font-size:32px; color:var(--dim); margin-top:10px; }
+  .comp { display:flex; gap:14px; margin-top:14px; }
+  .comp div { flex:1; }
+  .comp .cl { font-size:24px; color:var(--dim); }
+  .comp .ct { height:14px; background:var(--line); border-radius:7px; position:relative; margin-top:6px; overflow:hidden; }
+  .comp .cf { position:absolute; left:0; top:0; bottom:0; background:#7fa6e0; border-radius:7px; transform-origin:left center; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="1080" data-height="1920">
+  <div id="brand"><span id="brand-l"></span><span id="brand-r"></span></div>
+  <div id="scenes"></div>
+  <div id="disclaimer">자동 집계 데이터 · 매매 신호가 아닌 참고용 정보입니다</div>
+  <div id="progress"></div>
+</div>
+<script>
+const J = /*__JOB__*/null;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "");
+const sgn = (v, dp = 2) => (v > 0 ? "+" : "") + Number(v).toFixed(dp) + "%";
+$("#brand-l").innerHTML = "<b>증시한스푼</b> · " + esc(J.tag || "");
+$("#brand-r").textContent = J.date || "";
+
+// ── 블록 → HTML (데이터만 사용, 결정적) ──
+function bars(rows, unit) {
+  const mx = Math.max(0.3, ...rows.map((r) => Math.abs(r.v)));
+  return rows.map((r) => {
+    const w = (Math.abs(r.v) / mx) * 34, pos = r.v >= 0;
+    const lab = r.label || (unit === "억" ? (r.v > 0 ? "+" : "") + Math.round(r.v).toLocaleString() + "억" : sgn(r.v));
+    return `<div class="bar"><span class="tk">${esc(r.name)}</span><div class="track"><div class="axis"></div>
+      <div class="fill" data-o="${pos ? "left" : "right"}" style="${pos ? "left:50%" : "right:50%"};width:${w}%;background:var(--${pos ? "up" : "down"})"></div>
+      <span class="val ${pos ? "up" : "down"}" style="${pos ? `left:calc(50% + ${w}% + 12px)` : `right:calc(50% + ${w}% + 12px)`}">${esc(lab)}</span></div></div>`;
+  }).join("");
+}
+function tiles(ts) {
+  return `<div class="tiles">` + ts.map((t) => `<div class="tile" style="border-color:${t.tone ? `var(--${t.tone})` : "var(--line)"}">
+      <div class="l">${esc(t.label)}</div><div class="n cu ${t.tone || ""}" style="font-size:${String(t.value).length > 6 ? 54 : 72}px">${esc(t.value)}</div><div class="c">${esc(t.sub || "")}</div></div>`).join("") + `</div>`;
+}
+function card(c) {
+  return `<div class="card">${c.badge ? `<span class="badge">${esc(c.badge)}</span>` : ""}
+    <div class="hl">${esc(c.headline)}</div>${c.desc ? `<div class="ds">${esc(c.desc)}</div>` : ""}${c.source ? `<div class="src">${esc(c.source)}</div>` : ""}</div>`;
+}
+const ZC = (v) => (v >= 70 ? "var(--up)" : v >= 40 ? "var(--accent)" : "var(--down)");
+const ZN = (v) => (v >= 70 ? "강" : v >= 40 ? "보통" : "약");
+function arc(a0, a1, r) {                       // 0~100 점수 → 반원 호 경로
+  const p = (v) => { const t = Math.PI * (1 - v / 100); return [155 + r * Math.cos(t), 170 - r * Math.sin(t)]; };
+  const [x0, y0] = p(a0), [x1, y1] = p(a1);
+  return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
+}
+function gauges(gs) {
+  return gs.map((g, i) => {
+    const zones = [[0, 40, "#22304d", "var(--down)"], [40, 70, "#2c3e63", "var(--accent)"], [70, 100, "#3a2a3e", "var(--up)"]]
+      .map(([a, b, c0, c1]) => `<path d="${arc(a + 0.8, b - 0.8, 130)}" stroke="${g.v >= a && (g.v < b || b === 100) ? c1 : c0}" stroke-width="40" fill="none"/>`).join("");
+    const comp = g.comp ? `<div class="comp">` + [["이격", "gs", 40], ["기울기", "ss", 30], ["변동성", "vs", 30]].map(([l, k, m]) =>
+      `<div><div class="cl">${l} ${Math.round(g.comp[k])}/${m}</div><div class="ct"><div class="cf" style="width:${(g.comp[k] / m * 100).toFixed(1)}%"></div></div></div>`).join("") + `</div>` : "";
+    const pv = g.floor ? `이격 ${sgn(g.gap, 1)} · ${esc(g.badge || "")}` :
+      (g.prev != null ? `전일 ${Math.round(g.prev)}${Math.abs(g.v - g.prev) >= 1 ? (g.v > g.prev ? " ▲" : " ▼") + Math.round(Math.abs(g.v - g.prev)) : ""}` : "") + (g.badge ? ` · ${esc(g.badge)}` : "");
+    return `<div class="gauge"><svg viewBox="0 0 310 190">${zones}
+        <g class="needle" data-from="${g.prev != null ? g.prev : g.v}" data-to="${g.v}">
+          <line x1="155" y1="170" x2="40" y2="170" stroke="#fff" stroke-width="9" stroke-linecap="round"/></g>
+        <circle cx="155" cy="170" r="16" fill="#fff"/></svg>
+      <div><div class="nm">${esc(g.name)}</div><div><span class="sc cu" style="color:${ZC(g.v)}">${Math.round(g.v)}</span><span class="zn" style="color:${ZC(g.v)}">${ZN(g.v)}</span></div>
+        <div class="pv">${pv}</div>${comp}</div></div>`;
+  }).join("");
+}
+function body(b) {
+  if (!b) return "";
+  if (b.type === "bars") return (b.caption ? `<div class="sub" style="margin:0 0 18px">${esc(b.caption)}</div>` : "") + bars(b.rows, b.unit);
+  if (b.type === "tiles") return tiles(b.tiles);
+  if (b.type === "card") return card(b.card);
+  if (b.type === "cards") return b.cards.map(card).join("");
+  if (b.type === "gauges") return gauges(b.gauges) + `<div class="foot">추세 강도 100점 · 막대 = 이격·기울기·변동성 · 매매 권유 아님</div>`;
+  if (b.type === "line") return `<div class="line">${esc(b.text).replace(/ · /g, "<br/>")}</div>` +
+      (b.chip ? `<div class="wx">${esc(b.chip)}</div>` : "") + (b.foot ? `<div class="foot">${esc(b.foot)}</div>` : "");
+  return "";
+}
+const host = $("#scenes");
+J.scenes.forEach((s, i) => {
+  const big = s.big ? `<div class="big"><div class="n cu" style="color:${s.big.color}">${esc(s.big.text)}</div><div class="d">${esc(s.big.desc || "")}</div></div>` : "";
+  host.insertAdjacentHTML("beforeend",
+    `<section id="s${i}" class="clip" data-start="${s.start}" data-duration="${s.dur}" data-track-index="0">
+      ${s.chip ? `<div class="chip">${esc(s.chip)}</div>` : ""}<div class="h2">${esc(s.t1)}</div>
+      ${s.t2 ? `<div class="sub">${esc(s.t2)}</div>` : ""}${big}<div class="body">${body(s.body)}</div></section>`);
+});
+
+// ── 타임라인 (시크 가능 · transform/opacity 만) ──
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+const TOTAL = __TOTAL__;
+tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: TOTAL, ease: "none" }, 0);
+function countUp(el, at) {                       // "+2.82%" · "1,325원" · "-7,000억" · "71" → 0 근처에서 목표값까지
+  const m = el.textContent.trim().match(/^([+\-−]?)([\d,]*\.?\d+)(.*)$/);
+  if (!m) return;
+  const dp = (m[2].split(".")[1] || "").length, comma = m[2].includes(","), to = parseFloat(m[2].replace(/,/g, ""));
+  const o = { v: to * 0.6 };
+  const show = (v) => m[1] + (comma ? v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp }) : v.toFixed(dp)) + m[3];
+  tl.to(o, { v: to, duration: 0.9, ease: "power2.out", onUpdate: () => { el.textContent = show(o.v); } }, at);
+}
+J.scenes.forEach((s, i) => {
+  const S = s.start, sec = $("#s" + i);
+  tl.from(sec.querySelectorAll(".chip, .h2, .sub"), { y: 50, opacity: 0, duration: 0.5, ease: "power3.out", stagger: 0.1 }, S + 0.05);
+  const bg = sec.querySelector(".big");
+  if (bg) { tl.from(bg, { scale: 0.7, opacity: 0, duration: 0.5, ease: "back.out(2)" }, S + 0.35); countUp(bg.querySelector(".n"), S + 0.35); }
+  const B = S + (bg ? 0.75 : 0.45);
+  tl.from(sec.querySelectorAll(".bar, .tile, .card, .gauge, .line, .wx, .foot"), { y: 40, opacity: 0, duration: 0.5, ease: "power3.out", stagger: 0.12 }, B);
+  sec.querySelectorAll(".fill").forEach((el, k) => tl.from(el, { scaleX: 0, transformOrigin: el.dataset.o + " center", duration: 0.6, ease: "power2.out" }, B + 0.2 + k * 0.07));
+  sec.querySelectorAll(".val").forEach((el, k) => tl.from(el, { opacity: 0, duration: 0.3 }, B + 0.5 + k * 0.07));
+  sec.querySelectorAll(".body .cu").forEach((el, k) => countUp(el, B + 0.15 + k * 0.12));
+  sec.querySelectorAll(".needle").forEach((el, k) => {
+    const a = (v) => Math.max(0, Math.min(100, v)) * 1.8;     // 0점 = 왼쪽(0°) · 100점 = 오른쪽(180°)
+    tl.fromTo(el, { rotation: a(+el.dataset.from), svgOrigin: "155 170" }, { rotation: a(+el.dataset.to), svgOrigin: "155 170", duration: 1.0, ease: "power3.inOut" }, B + 0.35 + k * 0.25);
+  });
+  sec.querySelectorAll(".cf").forEach((el, k) => tl.from(el, { scaleX: 0, duration: 0.6, ease: "power2.out" }, B + 0.6 + k * 0.05));
+});
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>
