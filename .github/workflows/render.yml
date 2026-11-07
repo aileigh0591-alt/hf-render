@@ -1,5 +1,6 @@
 # 증시한스푼 브리핑 화면 렌더 (HyperFrames) — 봇(VM)이 repository_dispatch 로 장면 데이터를 보내면
 # 애니메이션 화면 + 자막(ASS)을 무음 MP4 로 만들어 artifact(video-<job_id>)로 올린다. 음성·배경음은 VM 이 합친다.
+# [hf-1.1] job.size 로 가로(1920x1080) 영상도 처리 · 긴 주말 장편 대비 제한시간 120분
 name: render
 run-name: render ${{ github.event.client_payload.job_id || 'manual' }}
 on:
@@ -13,7 +14,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +36,7 @@ jobs:
       - name: 자막 입히기
         run: |
           V=$(ls -t render/renders/*.mp4 | head -1)
+          ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x "$V"
           if [ -s subs.ass ]; then
             ffmpeg -y -loglevel error -i "$V" -vf "ass=subs.ass" -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p -an out.mp4
           else
