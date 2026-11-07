@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="ko" data-resolution="portrait">
+<html lang="ko" data-resolution="__RES__">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=1080, height=1920" />
+<meta name="viewport" content="width=__W__, height=__H__" />
 <script src="assets/gsap.min.js"></script>
 <style>
   @font-face { font-family: "Pretendard"; font-weight: 600; src: url("assets/fonts/Pretendard-SemiBold.woff2") format("woff2"); }
@@ -10,17 +10,20 @@
   @font-face { font-family: "Pretendard"; font-weight: 800; src: url("assets/fonts/Pretendard-ExtraBold.woff2") format("woff2"); }
   @font-face { font-family: "Pretendard"; font-weight: 900; src: url("assets/fonts/Pretendard-Black.woff2") format("woff2"); }
   :root { --bg:#0a0f1c; --panel:#121a2c; --line:#24304a; --ink:#f4f6fb; --dim:#8a96b0;
-          --up:#ff4d5e; --down:#3d8bff; --accent:#ffc23d; --good:#2fd08a; --font:"Pretendard",sans-serif; }
+          --up:#ff4d5e; --down:#3d8bff; --accent:#ffc23d; --good:#2fd08a; --font:"Pretendard",sans-serif;
+          --z:__Z__; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:1080px; height:1920px; overflow:hidden; background:var(--bg); }
-  #root { position:relative; width:1080px; height:1920px; font-family:var(--font); color:var(--ink);
+  html, body { width:__W__px; height:__H__px; overflow:hidden; background:var(--bg); }
+  /* [hf-1.1] 디자인은 세로 1080x1920 기준 그대로 두고 zoom 으로 실제 크기에 맞춘다 (세로면 zoom=1) */
+  #root { position:relative; width:__ROOTW__px; height:__ROOTH__px; zoom:var(--z); font-family:var(--font); color:var(--ink);
           font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
-  /* 자막 자리(아래 560px)는 비워 둔다 — 자막은 렌더 뒤 ffmpeg 로 입힘 */
-  .clip { position:absolute; left:0; top:0; width:1080px; height:1360px; padding:190px 70px 30px; display:flex; flex-direction:column; }
+  /* 자막 자리는 비워 둔다 — 자막은 렌더 뒤 ffmpeg 로 입힘 */
+  .clip { position:absolute; left:0; top:0; width:__ROOTW__px; height:1360px; padding:190px 70px 30px; display:flex; flex-direction:column; }
+  .head { display:contents; }
   #brand { position:absolute; top:60px; left:70px; right:70px; display:flex; justify-content:space-between; align-items:center;
            font-size:32px; font-weight:700; color:var(--dim); z-index:5; }
   #brand b { color:var(--accent); }
-  #progress { position:absolute; left:0; top:0; height:10px; width:1080px; background:var(--accent); transform-origin:left center; z-index:6; }
+  #progress { position:absolute; left:0; top:0; height:10px; width:100%; background:var(--accent); transform-origin:left center; z-index:6; }
   #disclaimer { position:absolute; bottom:40px; left:70px; right:70px; text-align:center; font-size:26px; color:var(--dim); z-index:5; }
   .chip { align-self:flex-start; font-size:32px; font-weight:800; color:#0a0f1c; background:var(--accent); padding:8px 22px; border-radius:999px; margin-bottom:22px; }
   .h2 { font-size:76px; font-weight:800; line-height:1.15; letter-spacing:-0.03em; }
@@ -30,6 +33,12 @@
   .big .d { font-size:36px; color:var(--dim); font-weight:600; margin-top:10px; }
   .body { margin-top:30px; flex:1; display:flex; flex-direction:column; justify-content:center; padding-bottom:40px; }
   .up { color:var(--up); } .down { color:var(--down); }
+  /* [hf-1.1] 가로: 머리말 왼쪽 · 본문 오른쪽 2단 */
+  #root[data-mode="landscape"] .clip { flex-direction:row; align-items:stretch; gap:90px; padding:150px 110px 30px; }
+  #root[data-mode="landscape"] .head { display:flex; flex-direction:column; width:34%; flex:none; justify-content:center; }
+  #root[data-mode="landscape"] .body { margin-top:0; width:66%; }
+  #root[data-mode="landscape"] #brand { left:110px; right:110px; }
+  #root[data-mode="landscape"] #disclaimer { left:110px; right:110px; }
   /* 막대 */
   .bar { display:grid; grid-template-columns:250px 1fr; align-items:center; height:92px; }
   .bar .tk { font-size:42px; font-weight:700; white-space:nowrap; overflow:hidden; }
@@ -69,7 +78,7 @@
 </style>
 </head>
 <body>
-<div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="1080" data-height="1920">
+<div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="__W__" data-height="__H__" data-mode="__MODE__">
   <div id="brand"><span id="brand-l"></span><span id="brand-r"></span></div>
   <div id="scenes"></div>
   <div id="disclaimer">자동 집계 데이터 · 매매 신호가 아닌 참고용 정보입니다</div>
@@ -142,8 +151,8 @@ J.scenes.forEach((s, i) => {
   const big = s.big ? `<div class="big"><div class="n cu" style="color:${s.big.color}">${esc(s.big.text)}</div><div class="d">${esc(s.big.desc || "")}</div></div>` : "";
   host.insertAdjacentHTML("beforeend",
     `<section id="s${i}" class="clip" data-start="${s.start}" data-duration="${s.dur}" data-track-index="0">
-      ${s.chip ? `<div class="chip">${esc(s.chip)}</div>` : ""}<div class="h2">${esc(s.t1)}</div>
-      ${s.t2 ? `<div class="sub">${esc(s.t2)}</div>` : ""}${big}<div class="body">${body(s.body)}</div></section>`);
+      <div class="head">${s.chip ? `<div class="chip">${esc(s.chip)}</div>` : ""}<div class="h2">${esc(s.t1)}</div>
+      ${s.t2 ? `<div class="sub">${esc(s.t2)}</div>` : ""}${big}</div><div class="body">${body(s.body)}</div></section>`);
 });
 
 // ── 타임라인 (시크 가능 · transform/opacity 만) ──
