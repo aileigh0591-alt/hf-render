@@ -14,9 +14,12 @@
           --z:__Z__; }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { width:__W__px; height:__H__px; overflow:hidden; background:var(--bg); }
-  /* [hf-1.1] 디자인은 세로 1080x1920 기준 그대로 두고 zoom 으로 실제 크기에 맞춘다 (세로면 zoom=1) */
-  #root { position:relative; width:__ROOTW__px; height:__ROOTH__px; zoom:var(--z); font-family:var(--font); color:var(--ink);
+  /* [hf-1.2] 디자인은 세로 1080x1920 기준 그대로 두고 transform 으로 실제 크기에 맞춘다 (세로면 1.0)
+     zoom 은 쓰지 않는다 — HyperFrames 가 #root 를 data-width/height 로 캡처해 화면 오른쪽·아래가 잘렸다 */
+  #root { position:relative; width:__W__px; height:__H__px; overflow:hidden; font-family:var(--font); color:var(--ink);
           font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+  #stage { position:absolute; left:0; top:0; width:__ROOTW__px; height:__ROOTH__px;
+           transform:scale(var(--z)); transform-origin:0 0; }
   /* 자막 자리는 비워 둔다 — 자막은 렌더 뒤 ffmpeg 로 입힘 */
   .clip { position:absolute; left:0; top:0; width:__ROOTW__px; height:1360px; padding:190px 70px 30px; display:flex; flex-direction:column; }
   .head { display:contents; }
@@ -38,7 +41,7 @@
   #root[data-mode="landscape"] .head { display:flex; flex-direction:column; width:34%; flex:none; justify-content:center; }
   #root[data-mode="landscape"] .body { margin-top:0; width:66%; }
   #root[data-mode="landscape"] #brand { left:110px; right:110px; }
-  #root[data-mode="landscape"] #disclaimer { left:110px; right:110px; }
+  #root[data-mode="landscape"] #disclaimer { left:110px; right:110px; top:1288px; bottom:auto; }
   /* 막대 */
   .bar { display:grid; grid-template-columns:250px 1fr; align-items:center; height:92px; }
   .bar .tk { font-size:42px; font-weight:700; white-space:nowrap; overflow:hidden; }
@@ -79,10 +82,12 @@
 </head>
 <body>
 <div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="__W__" data-height="__H__" data-mode="__MODE__">
+ <div id="stage">
   <div id="brand"><span id="brand-l"></span><span id="brand-r"></span></div>
   <div id="scenes"></div>
   <div id="disclaimer">자동 집계 데이터 · 매매 신호가 아닌 참고용 정보입니다</div>
   <div id="progress"></div>
+ </div>
 </div>
 <script>
 const J = /*__JOB__*/null;
